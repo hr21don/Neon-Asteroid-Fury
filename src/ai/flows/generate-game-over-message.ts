@@ -43,7 +43,7 @@ const prompt = ai.definePrompt({
   },
   prompt: `You are tasked with generating a dramatic game-over message in the style of an 80s action movie trailer.
 
-  The player achieved a score of {score} and survived for {survivalTime} seconds.
+  The player achieved a score of {{score}} and survived for {{survivalTime}} seconds.
 
   Craft a game-over message that is reminiscent of an 80s action movie trailer. The message must be thrilling, intense, and convey a sense of finality.
   `,

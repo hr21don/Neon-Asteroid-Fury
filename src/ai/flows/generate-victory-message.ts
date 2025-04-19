@@ -43,7 +43,7 @@ const victoryMessagePrompt = ai.definePrompt({
   },
   prompt: `Congratulations, {{{playerName}}}!
 
-You have cleared all the asteroids and achieved a score of {score} in {time}!
+You have cleared all the asteroids and achieved a score of {{score}} in {{time}}!
 
 Write a triumphant, over-the-top victory message in neon-glow text, reminiscent of an 80s arcade game, to celebrate this victory.
 `,
