@@ -232,11 +232,6 @@ export default function Home() {
   const moveSpaceship = () => {
     const s = spaceshipRef.current;
 
-    if(isMobile){
-      s.rotation += mobileRotation;
-      s.thrust = mobileThrust
-    }
-
     s.x += s.thrust * Math.cos(s.rotation - Math.PI / 2) * 5;
     s.y += s.thrust * Math.sin(s.rotation - Math.PI / 2) * 5;
     s.x = Math.max(0, Math.min(s.x, GAME_WIDTH));
@@ -325,17 +320,6 @@ export default function Home() {
   };
 
   const resetGame = () => {
-    const fetchMessages = async () => {
-      const gameOverRes = await generateGameOverMessage({score: 0, survivalTime: 60});
-      const minutes = Math.floor(time / 60);
-      const seconds = (time % 60).toString().padStart(2, '0');
-      setGameOverMessage(gameOverRes.message);
-      const victoryRes = await generateVictoryMessage({playerName, score: score, time: `${minutes}:${seconds}`});
-      setVictoryMessage(victoryRes.message);
-    };
-    
-    fetchMessages();
-
     setGameOverMessage('');
     setVictoryMessage('');
 
@@ -351,13 +335,26 @@ export default function Home() {
   };
 
   const endGame = (won: boolean) => {
-    setIsDialogVisible(true);
-    if (won) {
-      setVictory(true);
-    } else {
-      setGameOver(true);
-    }
+    const fetchMessages = async () => {
+      if (!gameOver && !victory) {
+        const minutes = Math.floor(time / 60);
+        const seconds = (time % 60).toString().padStart(2, '0');
+        if (won) {
+          const victoryRes = await generateVictoryMessage({playerName, score: score, time: `${minutes}:${seconds}`});
+          setVictoryMessage(victoryRes.message);
+        } else {
+          const gameOverRes = await generateGameOverMessage({score: score, survivalTime: 120 - time});
+          setGameOverMessage(gameOverRes.message);
+        }
+        setIsDialogVisible(true);
+        setVictory(won);
+        setGameOver(!won);
+      }
+    };
+    fetchMessages();
+
   };
+
 
     const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
@@ -379,42 +376,34 @@ export default function Home() {
       spaceshipRef.current.thrust = 0;
     }, []);
 
+    const handleTouchMove = useCallback((event: React.TouchEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const touch = event.touches[0];
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+
+        const dx = x - spaceshipRef.current.x;
+        const dy = y - spaceshipRef.current.y;
+
+        spaceshipRef.current.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+    }, []);
+
     const handleTouchStart = useCallback((event: React.TouchEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const touch = event.touches[0];
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
-
-      const halfWidth = canvas.width / 2;
-
-      if (x < halfWidth / 2) {
-        setMobileRotation(-ROTATION_SPEED);
-      } else if (x > halfWidth * 1.5) {
-        setMobileRotation(ROTATION_SPEED);
-      } else {
-        setMobileThrust(1.0)
-      }
-
+        handleTouchMove(event);
+        spaceshipRef.current.thrust = THRUST_SPEED;
     }, []);
 
     const handleTouchEnd = useCallback(() => {
-        setMobileRotation(0);
-        setMobileThrust(0);
+      spaceshipRef.current.thrust = 0;
     }, []);
 
-  return (
+    return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
       <div className="absolute top-4 left-4">
-        <button
-          className={cn(
-            "w-20 h-10 rounded-md text-black font-bold transition-colors",
-            isPlaying ? "bg-lime-400" : "bg-lime-500"
-          )}
-          onClick={togglePlay}
-        >
+        <button className={cn("w-20 h-10 rounded-md text-black font-bold transition-colors", isPlaying ? "bg-lime-400" : "bg-lime-500")} onClick={togglePlay}>
           {isPlaying ? "Pause" : "Play"}
         </button>
       </div>
@@ -440,24 +429,23 @@ export default function Home() {
           onMouseUp={handleMouseUp}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
         />
         {isMobile && (
-          <div className="flex mt-2 space-x-2">
-            <Button  unselectable="on" onClick={shootProjectile}>
-              Shoot Projectile
-
-            </Button>
-          </div>
-        )}
-        <Card className="w-[350px] mt-4 md:absolute md:top-4 md:right-4 md:w-[350px] mt-4 w-full">
+              <div className="flex mt-2 space-x-2">
+                <Button unselectable="on" onClick={shootProjectile}>
+                  Shoot Projectile
+                </Button>
+              </div>
+          )}        <Card className="w-[350px] mt-4 md:absolute md:top-4 md:right-4 md:w-[350px] mt-4 w-full">
           <CardHeader>
             <CardTitle>Instructions</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="list-disc pl-5">
+           <ul className="list-disc pl-5">
               {isMobile ? (
-                <>
-                  <li>Use the left half of the screen to rotate left, the right half to rotate right, and the middle to thrust.</li>
+                <>  
+                  <li>Touch the screen to rotate the ship left or right and to thrust the ship forward.</li>
                   <li>Press the "shoot projectiles" button to shoot projectiles</li>
                 </>
               ) : (
@@ -480,7 +468,7 @@ export default function Home() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{victory ? 'Victory!' : 'Game Over'}</DialogTitle>
-            <DialogDescription>{gameOver && gameOverMessage ? gameOverMessage : victory && victoryMessage ? victoryMessage : ''}</DialogDescription>
+            <DialogDescription>{victory ? victoryMessage : gameOver ? gameOverMessage : ''}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button onClick={() => resetGame()}>Play Again</Button>
