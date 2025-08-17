@@ -51,3 +51,4 @@ Generate a nostalgic retro-style Asteroids game using JavaScript, HTML, and CSS.
 📚 Documentation
 
 Firebase Documentation: [Effective Prompt](https://firebase.google.com/docs/studio/prompting?_gl=1*1x2p5c5*_up*MQ..*_ga*MTEzMDQ1MTcyOC4xNzQ0NDQ4MDMz*_ga_CW55HF8NVT*MTc0NDQ0ODAzMy4xLjAuMTc0NDQ0ODAzMy4wLjAuMA)
+API Documentation: [Gemini API](https://aistudio.google.com/app/apikey)
